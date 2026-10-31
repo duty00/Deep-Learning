@@ -1,0 +1,11 @@
+{
+  "experiment_name": "proposed",
+  "task": "TBD",
+  "seed": 42,
+  "dataset": {"name": "TBD", "root": "data/processed", "split_manifest": "data/splits/manifest.json", "group_key": "TBD"},
+  "model": {"name": "TBD", "pretrained": null, "checkpoint": null},
+  "training": {"batch_size": 16, "epochs": 10, "learning_rate": 0.001, "selection_split": "validation"},
+  "evaluation": {"split": "test", "primary_metric": "TBD"},
+  "components": {},
+  "output_dir": "outputs"
+}

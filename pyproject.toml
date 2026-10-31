@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dl-group-project"
+version = "0.1.0"
+description = "Research project scaffold for a three-person deep learning team"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+train = ["torch", "numpy", "pandas", "scikit-learn", "matplotlib", "tqdm"]
+
+[project.scripts]
+dl-project = "dl_project.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
