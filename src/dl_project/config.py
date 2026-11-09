@@ -30,6 +30,12 @@ def validate_config(config):
     for key in ("epochs", "batch_size"):
         if type(train.get(key)) is not int or train[key] <= 0:
             raise ValueError(f"training.{key} must be a positive integer.")
+    # Optional gradient accumulation: batch_size is the effective batch (kept identical on every GPU),
+    # micro_batch_size is what fits in VRAM; accumulation steps = batch_size // micro_batch_size.
+    if "micro_batch_size" in train:
+        micro = train["micro_batch_size"]
+        if type(micro) is not int or micro <= 0 or train["batch_size"] % micro:
+            raise ValueError("training.micro_batch_size must be a positive integer dividing training.batch_size.")
     lr = train.get("learning_rate")
     if type(lr) not in (int, float) or not 0 < lr < float("inf"):
         raise ValueError("training.learning_rate must be a finite positive number.")

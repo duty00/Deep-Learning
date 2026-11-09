@@ -11,7 +11,10 @@ requires-python = ">=3.10"
 dependencies = []
 
 [project.optional-dependencies]
-train = ["torch", "numpy", "pandas", "scikit-learn", "matplotlib", "tqdm"]
+# data: enough to build/verify the lesion-grouped split (scripts/make_splits.py, tests/test_splits.py).
+data = ["numpy", "scikit-learn>=1.3"]
+# train: versions to be pinned in requirements-lock.txt once the environment is fixed (PLAN_BTL 5.11).
+train = ["torch", "numpy", "pandas", "scikit-learn>=1.3", "matplotlib", "tqdm", "timm", "pillow", "grad-cam"]
 
 [project.scripts]
 dl-project = "dl_project.cli:main"

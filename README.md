@@ -16,6 +16,11 @@ python -m venv .venv
 ```
 
 Lệnh `check` kiểm tra cấu hình và báo các quyết định còn thiếu; **không huấn luyện mô hình**.
+
+Dữ liệu và split (giai đoạn 1): tải theo [scripts/download_data.md](scripts/download_data.md), rồi chạy
+`.\.venv\Scripts\python.exe -m pip install -e ".[data]"` và `.\.venv\Scripts\python.exe scripts\make_splits.py --verify`
+(bỏ `--verify` nếu chưa có manifest). Máy local RTX 2050 4 GB: batch hiệu dụng 32 = micro-batch 8 × tích lũy 4, AMP;
+bước nào chạy Kaggle xem [docs/HARDWARE.md](docs/HARDWARE.md).
 Để cài thư viện cho huấn luyện sau khi nhóm chọn hướng:
 
 ```powershell

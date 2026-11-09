@@ -27,6 +27,8 @@ data/processed/*
 !data/processed/.gitkeep
 data/splits/*
 !data/splits/.gitkeep
+# The split manifest (image ids only, no images) is committed: single source of truth for all runs.
+!data/splits/manifest.json
 checkpoints/*
 !checkpoints/.gitkeep
 outputs/*

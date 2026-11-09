@@ -17,10 +17,18 @@ class FoundationTests(unittest.TestCase):
     def setUp(self):
         self.config = load_config(ROOT / "configs/baseline.json")
 
-    def test_both_templates_are_valid_but_explicitly_pending(self):
+    def test_chosen_topic_configs_have_no_pending_decisions(self):
         for name in ("baseline", "proposed"):
             config = load_config(ROOT / f"configs/{name}.json")
-            self.assertIn("task", pending_decisions(config))
+            self.assertEqual(pending_decisions(config), [])
+            self.assertEqual(config["dataset"]["group_key"], "lesion_id")
+
+    def test_placeholder_values_are_reported_as_pending(self):
+        self.config["task"] = "TBD"
+        self.config["model"]["name"] = "TBD"
+        pending = pending_decisions(self.config)
+        self.assertIn("task", pending)
+        self.assertIn("model.name", pending)
 
     def test_test_split_cannot_select_checkpoints(self):
         self.config["training"]["selection_split"] = "test"
@@ -36,6 +44,14 @@ class FoundationTests(unittest.TestCase):
         self.config["experiment_name"] = "../escape"
         with self.assertRaises(ValueError):
             validate_config(self.config)
+
+    def test_micro_batch_must_divide_effective_batch(self):
+        self.assertEqual(self.config["training"]["batch_size"] % self.config["training"]["micro_batch_size"], 0)
+        for value in (0, 5, True, 64):
+            config = deepcopy(self.config)
+            config["training"]["micro_batch_size"] = value
+            with self.assertRaises(ValueError):
+                validate_config(config)
 
     def test_unconfigured_training_does_not_create_results(self):
         with TemporaryDirectory() as temp:
