@@ -1,5 +1,4 @@
-"""Register an implemented Task class after the team selects its topic."""
-TASKS = {}
-# Example after implementation:
-# from .classification import ClassificationTask
-# TASKS["classification"] = ClassificationTask
+"""Registered tasks. Heavy imports (torch, timm) happen inside the task methods, not here."""
+from .skin_lesion import SkinLesionTask
+
+TASKS = {"skin_lesion": SkinLesionTask}

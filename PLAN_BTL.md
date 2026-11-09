@@ -155,10 +155,12 @@ Thang đánh giá: Khả thi (compute + thời gian 5 tuần) · Tiềm năng đ
 | Tuần | Thời gian | Việc chính | Người | Đầu ra |
 |---|---|---|---|---|
 | W1 | 09–15/11 | Chốt đề tài, tải data, EDA (phân phối lớp, trùng lặp `lesion_id`, metadata thiếu), đọc 6–10 paper, điền `docs/PROPOSAL.md`, tạo split theo nhóm + manifest | Cả nhóm | Problem statement, split manifest, notebook EDA |
-| W2 | 16–22/11 | Data pipeline + baseline (CE, concat metadata) chạy end-to-end; sanity check; baseline 3 seed; module metric | B: data/baseline · C: metric/eval · A: bắt đầu FiLM | Kết quả baseline thật trong `results.csv` |
-| W3 | 23–29/11 | Cài phương pháp đề xuất (FiLM + logit-adjusted loss + aug), tune trên **val**; chạy so sánh focal/weighted CE | A: method · B: tuning · C: eval domain shift | Kết quả sơ bộ → **gửi GV xin feedback/GPU** |
-| W4 | 30/11–06/12 | Ablation đầy đủ × 3 seed, đánh giá PAD-UFES-20, phân tích lỗi, Grad-CAM, calibration; chốt test 1 lần | Cả nhóm | Bảng kết quả + hình cho báo cáo |
-| W5 | 07–13/12 | Viết báo cáo LNCS (Overleaf), README tái lập, upload checkpoint, rà soát integrity, nộp | A: Method/Intro · B: Setup/Results · C: Analysis/README | PDF + codebase |
+| W2 | 16–22/11 | Data pipeline + baseline (CE, concat metadata) chạy end-to-end; sanity check; baseline 3 seed; module metric | A: code · B/C: Related work, Dataset, Setup | Kết quả baseline thật trong `results.csv` |
+| W3 | 23–29/11 | Cài phương pháp đề xuất (FiLM + logit-adjusted loss + aug), tune trên **val**; chạy so sánh focal/weighted CE | A: code · B: Method + sơ đồ · C: Limitations | Kết quả sơ bộ → **gửi GV xin feedback/GPU** |
+| W4 | 30/11–06/12 | Ablation đầy đủ × 3 seed, đánh giá PAD-UFES-20, phân tích lỗi, Grad-CAM, calibration; chốt test 1 lần | A: chạy + xuất bảng/hình · C: Results | Bảng kết quả + hình cho báo cáo |
+| W5 | 07–13/12 | Hoàn thiện báo cáo LNCS, README tái lập, upload checkpoint, rà soát integrity, nộp | A: README/checkpoint · B: Abstract/Conclusion · C: ghép PDF | PDF + codebase |
+
+**Phân công (cập nhật 09/11):** A làm toàn bộ code, B và C viết báo cáo. Chi tiết từng tuần: `docs/TEAM.md`.
 
 **Mốc dừng an toàn:** hết W2 phải có baseline thật; hết W3 nếu phương pháp không cải thiện → vẫn giữ, chuyển trọng tâm sang phân tích trung thực "vì sao không cải thiện" + ablation (vẫn được điểm).
 
@@ -234,6 +236,14 @@ Thang đánh giá: Khả thi (compute + thời gian 5 tuần) · Tiềm năng đ
 | E12 | data size | E2 vs E7 với 25%/50% train | — | — | ConvNeXt-T | 1–3 |
 
 Tổng ~33–40 run × ~30' ≈ 20h GPU → vừa quota Kaggle 1–2 tuần.
+
+### 5.10b Phát hiện khi triển khai (ghi vào báo cáo)
+- **EDA:** 10.015 ảnh / 7.470 lesion; 4.501 ảnh thuộc lesion có ≥2 ảnh → chia theo ảnh sẽ rò rỉ. Tỉ lệ nv/df ≈ 58. Có 2 cặp
+  file trùng từng byte (khác `image_id`), mỗi cặp cùng lesion và cùng nằm trong train → không rò rỉ nhờ chia theo lesion.
+  `dx_type` không dùng làm đầu vào (là cách xác nhận nhãn → rò rỉ nhãn).
+- **FiLM + LayerNorm:** mỗi stage ConvNeXt được theo sau bởi LayerNorm (downsample), LayerNorm triệt tiêu phần γ/β đồng đều
+  giữa các kênh ⇒ FiLM chỉ tác động qua **phần khác nhau giữa các kênh**. Nên nêu trong phần Method/Analysis.
+- Test set chỉ có 18 ảnh df, 22 ảnh vasc ⇒ báo cáo mean ± std qua seed + bootstrap CI (đã cài trong `evaluate`).
 
 ### 5.11 Cấu trúc file cần tạo
 

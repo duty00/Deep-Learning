@@ -6,6 +6,10 @@
 | PAD-UFES-20 | Pacheco et al. 2020, Mendeley Data doi:10.17632/zr7vgbcyr2.1 | CC BY 4.0 (xác nhận khi tải) | Chỉ test ngoài | Map nhãn xấp xỉ (giai đoạn sau) |
 | scikit-learn | `StratifiedGroupKFold` | BSD-3-Clause | `src/dl_project/data/splits.py` | Gọi thư viện, không sao chép code |
 
-Model/code bên ngoài (timm, grad-cam...) chưa dùng; điền nguồn trước khi tái sử dụng.
+| timm | `convnext_tiny`, `efficientnet_b0` + trọng số ImageNet (Hugging Face Hub) | Apache-2.0 (code); trọng số theo model card | `src/dl_project/models/backbones.py` | Tách backbone thành 4 stage để chèn FiLM; không sao chép code |
+| PyTorch / torchvision | Tensor, `nn`, transforms | BSD-3-Clause | Toàn bộ `data/`, `models/` | Gọi thư viện |
+
+Code nhóm tự viết (không sao chép): `MetaEncoder`, `FiLM` (ý tưởng từ Perez et al., AAAI 2018), `SkinLesionClassifier`,
+`MetadataEncoder`, Dataset HAM10000, augmentation mô phỏng ảnh điện thoại. grad-cam chưa dùng; điền nguồn khi dùng.
 Nhóm chưa chọn giấy phép cho mã nguồn tự viết; quyết định trước khi phát hành công khai.
 Khai báo AI hỗ trợ ngôn ngữ trong báo cáo nếu có, phù hợp hướng dẫn môn.

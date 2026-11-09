@@ -1,34 +1,51 @@
-# DL — Deep Learning Group Project
+# DL — Phân loại tổn thương da HAM10000 (CO3133)
 
-Bộ khung làm việc cho nhóm 3 người, môn CO3133 — Deep Learning and Applications.
-**Đề tài, dữ liệu và mô hình chưa được chốt.** Chưa có kết quả huấn luyện hoặc đóng góp nghiên cứu được xác nhận.
+Đề tài (đã chốt): **Metadata-Conditioned Feature Modulation and Prior-Aware Training for Long-Tailed Skin
+Lesion Classification under Domain Shift**. ConvNeXt-T + FiLM theo metadata (tuổi, giới, vị trí) + logit-adjusted
+loss trên HAM10000 (chia theo `lesion_id`), test domain shift trên PAD-UFES-20. Kế hoạch: [PLAN_BTL.md](PLAN_BTL.md).
+Chưa có kết quả thí nghiệm chính thức.
 
-## Bắt đầu
-
-Yêu cầu Python 3.10 trở lên và Git. Chạy trong PowerShell:
+## Cài đặt (Windows, PowerShell)
 
 ```powershell
 cd D:\DL
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e .
-.\.venv\Scripts\python.exe -m dl_project check --config configs/baseline.json
+python -m venv .venv                      # Python 3.11 x64 chính thức (không dùng Python MSYS2)
+.\.venv\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+.\.venv\Scripts\python.exe -m pip install -e ".[train]"
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Lệnh `check` kiểm tra cấu hình và báo các quyết định còn thiếu; **không huấn luyện mô hình**.
+Cài torch CUDA **trước** `.[train]`; nếu làm ngược lại pip sẽ kéo bản torch CPU từ PyPI.
 
-Dữ liệu và split (giai đoạn 1): tải theo [scripts/download_data.md](scripts/download_data.md), rồi chạy
-`.\.venv\Scripts\python.exe -m pip install -e ".[data]"` và `.\.venv\Scripts\python.exe scripts\make_splits.py --verify`
-(bỏ `--verify` nếu chưa có manifest). Máy local RTX 2050 4 GB: batch hiệu dụng 32 = micro-batch 8 × tích lũy 4, AMP;
-bước nào chạy Kaggle xem [docs/HARDWARE.md](docs/HARDWARE.md).
-Để cài thư viện cho huấn luyện sau khi nhóm chọn hướng:
+## Dữ liệu
+
+Tải theo [scripts/download_data.md](scripts/download_data.md) vào `data/raw/ham10000/`, rồi xác nhận phép chia đã commit:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -e ".[train]"
+.\.venv\Scripts\python.exe scripts\make_splits.py --verify
 ```
 
-Chọn bản PyTorch phù hợp GPU/driver trước khi chạy thật. Dependencies hiện là danh sách khởi đầu,
-chưa phải môi trường tái lập cuối cùng; lưu bản freeze cho từng thí nghiệm.
+EDA: [notebooks/01_eda.ipynb](notebooks/01_eda.ipynb) (hình lưu ở `reports/figures/`).
+
+## Chạy thí nghiệm
+
+```powershell
+# Kiểm tra nhanh toàn bộ pipeline (2 epoch x 8 batch), kết quả không có ý nghĩa
+.\.venv\Scripts\python.exe -m dl_project train --config configs/experiments/e07_film_la.json --debug
+# Huấn luyện 1 seed (checkpoint chọn theo val macro-F1)
+.\.venv\Scripts\python.exe -m dl_project train --config configs/experiments/e07_film_la.json --seed 42
+# Đánh giá trên validation (test chỉ dùng cho cấu hình đã chốt)
+.\.venv\Scripts\python.exe -m dl_project evaluate --config configs/experiments/e07_film_la.json --seed 42 `
+    --checkpoint outputs/e07_film_la-s42/train/<run-id>/best.pt --split validation
+# Gom mean ± std qua seed -> reports/tables/, experiments/results.csv
+.\.venv\Scripts\python.exe scriptsggregate_results.py --split validation
+```
+
+- Ma trận thí nghiệm: [experiments/matrix.csv](experiments/matrix.csv); config sinh bằng `scripts/make_configs.py`.
+- Chạy hàng loạt trên Kaggle: [notebooks/kaggle_runner.ipynb](notebooks/kaggle_runner.ipynb) (`--micro-batch-size 32`).
+- Máy RTX 2050 4 GB: batch hiệu dụng 32 = micro-batch 8 × tích lũy 4, AMP. Xem [docs/HARDWARE.md](docs/HARDWARE.md).
+- Mỗi lượt chạy ghi vào `outputs/<experiment>/<train|evaluate>/<UTC-id>/`: config, commit, môi trường, `train.log`,
+  `history.csv`, `best.pt`, `metrics.json`, `predictions.csv`.
 
 ## Đọc theo thứ tự
 
@@ -63,10 +80,11 @@ docs/                    Hướng dẫn, phân công, checklist, đề xuất
 
 ## Trạng thái hiện tại
 
-- Đã có: kiểm tra cấu hình, CLI, lưu metadata lượt chạy, mẫu nhiệm vụ và kiểm tra tự động.
-- Cần làm: chọn đề tài, triển khai dữ liệu/mô hình/metric/vòng lặp và đăng ký nhiệm vụ.
-- `train`/`evaluate` sẽ dừng với thông báo rõ ràng đến khi nhiệm vụ được triển khai.
-- Không có dữ liệu, checkpoint hoặc số liệu giả trong bộ khung.
+- Đã có: split theo lesion + manifest, Dataset/metadata encoder, model B0/B1/FiLM (ConvNeXt-T, EfficientNet-B0),
+  4 loss (CE, weighted CE, focal, logit-adjusted), trainer (AMP, tích lũy gradient, early stopping theo val),
+  metric (macro-F1, rare-recall, AUROC, ECE, bootstrap CI), 17 config thí nghiệm, notebook EDA và Kaggle, test tự động.
+- Cần làm: chạy E1–E12 × 3 seed, đánh giá PAD-UFES-20 (chưa tải), Grad-CAM, đo latency, phân tích lỗi.
+- Không có checkpoint hoặc số liệu giả trong repo.
 
 ## Nguyên tắc
 

@@ -1,1 +1,18 @@
 id,question,config,seed,owner,status,run_path,notes
+e01_image_only_ce,baseline,configs/experiments/e01_image_only_ce.json,42;43;44,A,todo,,image only
+e02_concat_ce,baseline (main),configs/experiments/e02_concat_ce.json,42;43;44,A,todo,,B1
+e03_concat_wce,RQ2,configs/experiments/e03_concat_wce.json,42;43;44,A,todo,,
+e04_concat_focal,RQ2,configs/experiments/e04_concat_focal.json,42;43;44,A,todo,,
+e05_concat_la,RQ2,configs/experiments/e05_concat_la.json,42;43;44,A,todo,,
+e06_film_ce,RQ1,configs/experiments/e06_film_ce.json,42;43;44,A,todo,,
+e07_film_la,proposed,configs/experiments/e07_film_la.json,42;43;44,A,todo,,main method
+e08_film_la_domainaug,RQ3,configs/experiments/e08_film_la_domainaug.json,42;43;44,A,todo,,
+e09_film3_la,ablation FiLM,configs/experiments/e09_film3_la.json,42;43;44,A,todo,,FiLM stage 3 only
+e10_effb0_concat_ce,RQ4,configs/experiments/e10_effb0_concat_ce.json,42;43;44,A,todo,,BatchNorm: run on Kaggle with micro 32
+e11_effb0_film_la,RQ4,configs/experiments/e11_effb0_film_la.json,42;43;44,A,todo,,BatchNorm: run on Kaggle with micro 32
+e12a_concat_ce_frac25,data size,configs/experiments/e12a_concat_ce_frac25.json,42;43;44,A,todo,,
+e12b_concat_ce_frac50,data size,configs/experiments/e12b_concat_ce_frac50.json,42;43;44,A,todo,,
+e12c_film_la_frac25,data size,configs/experiments/e12c_film_la_frac25.json,42;43;44,A,todo,,
+e12d_film_la_frac50,data size,configs/experiments/e12d_film_la_frac50.json,42;43;44,A,todo,,
+t07_film_la_tau05,tune tau,configs/experiments/t07_film_la_tau05.json,42,A,todo,,validation only
+t07_film_la_tau15,tune tau,configs/experiments/t07_film_la_tau15.json,42,A,todo,,validation only
