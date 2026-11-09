@@ -74,15 +74,29 @@ def main(argv=None):
                 raise ValueError("Metadata file differs from the one used to build the manifest (sha256).")
             method = manifest["method"]
             verify_no_group_leakage(records, manifest["splits"], method["group_key"])
-            regenerated = make_group_splits(records, seed=method["seed"], ratios=method["ratios"],
-                                            n_folds=method["n_folds"], group_key=method["group_key"],
-                                            stratify_key=method["stratify_key"])
-            if regenerated != manifest["splits"]:
+            # The committed manifest is the single source of truth; regeneration is only a reproducibility
+            # check. StratifiedGroupKFold's assignment can change across scikit-learn versions, so a
+            # mismatch is an error only when the installed version equals the one that built the manifest.
+            try:
                 import sklearn
-                raise ValueError("Regenerated split differs from manifest (manifest built with scikit-learn "
-                                 f"{method['sklearn_version']}, installed {sklearn.__version__}). "
-                                 "Keep using the committed manifest; do not regenerate silently.")
-            print(f"OK: {output_path} verified (checksum, source sha256, no lesion leakage, reproducible).")
+            except ImportError:
+                sklearn = None
+            reproducible = "skipped (scikit-learn not installed)"
+            if sklearn is not None:
+                regenerated = make_group_splits(records, seed=method["seed"], ratios=method["ratios"],
+                                                n_folds=method["n_folds"], group_key=method["group_key"],
+                                                stratify_key=method["stratify_key"])
+                if regenerated == manifest["splits"]:
+                    reproducible = "reproducible"
+                elif sklearn.__version__ == method.get("sklearn_version"):
+                    raise ValueError("Regenerated split differs from manifest with the SAME scikit-learn version "
+                                     f"({sklearn.__version__}): metadata or split code changed.")
+                else:
+                    reproducible = (f"not regenerated identically (manifest: scikit-learn "
+                                    f"{method.get('sklearn_version')}, installed {sklearn.__version__}); "
+                                    "using the committed manifest as-is")
+                    print(f"WARNING: split {reproducible}.", file=sys.stderr)
+            print(f"OK: {output_path} verified (checksum, source sha256, no lesion leakage; {reproducible}).")
             print_summary(manifest)
             return 0
 
