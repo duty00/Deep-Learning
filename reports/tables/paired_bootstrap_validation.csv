@@ -1,0 +1,46 @@
+question,A,B,metric,diff_A_minus_B,ci95_low,ci95_high,p_bootstrap,significant
+metadata: concat vs none,e02_concat_ce,e01_image_only_ce,macro_f1,+0.0116,-0.0377,+0.0564,0.571,no
+metadata: concat vs none,e02_concat_ce,e01_image_only_ce,balanced_accuracy,+0.0054,-0.0470,+0.0569,0.792,no
+metadata: concat vs none,e02_concat_ce,e01_image_only_ce,rare_recall,-0.0002,-0.0699,+0.0717,0.975,no
+metadata: concat vs none,e02_concat_ce,e01_image_only_ce,recall_mel,+0.0542,-0.0038,+0.1111,0.068,no
+metadata: concat vs none,e02_concat_ce,e01_image_only_ce,recall_nv,-0.0139,-0.0278,-0.0007,0.042,yes
+RQ1: FiLM vs concat (CE),e06_film_ce,e02_concat_ce,macro_f1,-0.0092,-0.0526,+0.0350,0.696,no
+RQ1: FiLM vs concat (CE),e06_film_ce,e02_concat_ce,balanced_accuracy,-0.0020,-0.0408,+0.0398,0.952,no
+RQ1: FiLM vs concat (CE),e06_film_ce,e02_concat_ce,rare_recall,+0.0016,-0.0503,+0.0583,0.928,no
+RQ1: FiLM vs concat (CE),e06_film_ce,e02_concat_ce,recall_mel,-0.0582,-0.1212,+0.0074,0.083,no
+RQ1: FiLM vs concat (CE),e06_film_ce,e02_concat_ce,recall_nv,+0.0345,+0.0226,+0.0463,0.000,yes
+RQ1: FiLM vs concat (LA),e07_film_la,e05_concat_la,macro_f1,-0.0270,-0.0560,+0.0022,0.068,no
+RQ1: FiLM vs concat (LA),e07_film_la,e05_concat_la,balanced_accuracy,-0.0273,-0.0574,+0.0046,0.105,no
+RQ1: FiLM vs concat (LA),e07_film_la,e05_concat_la,rare_recall,-0.0500,-0.0907,-0.0053,0.023,yes
+RQ1: FiLM vs concat (LA),e07_film_la,e05_concat_la,recall_mel,-0.1245,-0.1816,-0.0719,0.000,yes
+RQ1: FiLM vs concat (LA),e07_film_la,e05_concat_la,recall_nv,+0.0229,+0.0092,+0.0375,0.000,yes
+RQ2: weighted CE vs CE,e03_concat_wce,e02_concat_ce,macro_f1,+0.0095,-0.0272,+0.0459,0.638,no
+RQ2: weighted CE vs CE,e03_concat_wce,e02_concat_ce,balanced_accuracy,+0.0197,-0.0125,+0.0508,0.259,no
+RQ2: weighted CE vs CE,e03_concat_wce,e02_concat_ce,rare_recall,+0.0404,-0.0042,+0.0830,0.081,no
+RQ2: weighted CE vs CE,e03_concat_wce,e02_concat_ce,recall_mel,+0.0703,+0.0140,+0.1329,0.015,yes
+RQ2: weighted CE vs CE,e03_concat_wce,e02_concat_ce,recall_nv,-0.0033,-0.0147,+0.0072,0.561,no
+RQ2: focal vs CE,e04_concat_focal,e02_concat_ce,macro_f1,+0.0228,-0.0115,+0.0585,0.193,no
+RQ2: focal vs CE,e04_concat_focal,e02_concat_ce,balanced_accuracy,+0.0057,-0.0233,+0.0356,0.790,no
+RQ2: focal vs CE,e04_concat_focal,e02_concat_ce,rare_recall,-0.0029,-0.0431,+0.0389,0.810,no
+RQ2: focal vs CE,e04_concat_focal,e02_concat_ce,recall_mel,-0.1104,-0.1733,-0.0518,0.000,yes
+RQ2: focal vs CE,e04_concat_focal,e02_concat_ce,recall_nv,+0.0444,+0.0328,+0.0558,0.000,yes
+RQ2: LA vs CE,e05_concat_la,e02_concat_ce,macro_f1,+0.0101,-0.0346,+0.0568,0.680,no
+RQ2: LA vs CE,e05_concat_la,e02_concat_ce,balanced_accuracy,+0.0497,+0.0011,+0.0978,0.042,yes
+RQ2: LA vs CE,e05_concat_la,e02_concat_ce,rare_recall,+0.0806,+0.0150,+0.1478,0.016,yes
+RQ2: LA vs CE,e05_concat_la,e02_concat_ce,recall_mel,+0.0964,+0.0361,+0.1589,0.000,yes
+RQ2: LA vs CE,e05_concat_la,e02_concat_ce,recall_nv,-0.0162,-0.0279,-0.0055,0.005,yes
+RQ2: LA vs weighted CE,e05_concat_la,e03_concat_wce,macro_f1,+0.0006,-0.0347,+0.0386,0.975,no
+RQ2: LA vs weighted CE,e05_concat_la,e03_concat_wce,balanced_accuracy,+0.0300,-0.0077,+0.0702,0.124,no
+RQ2: LA vs weighted CE,e05_concat_la,e03_concat_wce,rare_recall,+0.0402,-0.0120,+0.0966,0.139,no
+RQ2: LA vs weighted CE,e05_concat_la,e03_concat_wce,recall_mel,+0.0261,-0.0075,+0.0622,0.150,no
+RQ2: LA vs weighted CE,e05_concat_la,e03_concat_wce,recall_nv,-0.0129,-0.0248,-0.0013,0.030,yes
+RQ2: LA vs focal,e05_concat_la,e04_concat_focal,macro_f1,-0.0127,-0.0489,+0.0234,0.534,no
+RQ2: LA vs focal,e05_concat_la,e04_concat_focal,balanced_accuracy,+0.0441,+0.0033,+0.0847,0.033,yes
+RQ2: LA vs focal,e05_concat_la,e04_concat_focal,rare_recall,+0.0835,+0.0275,+0.1409,0.004,yes
+RQ2: LA vs focal,e05_concat_la,e04_concat_focal,recall_mel,+0.2068,+0.1361,+0.2816,0.000,yes
+RQ2: LA vs focal,e05_concat_la,e04_concat_focal,recall_nv,-0.0606,-0.0740,-0.0472,0.000,yes
+proposed vs baseline,e07_film_la,e02_concat_ce,macro_f1,-0.0169,-0.0569,+0.0258,0.429,no
+proposed vs baseline,e07_film_la,e02_concat_ce,balanced_accuracy,+0.0225,-0.0143,+0.0631,0.257,no
+proposed vs baseline,e07_film_la,e02_concat_ce,rare_recall,+0.0305,-0.0193,+0.0868,0.254,no
+proposed vs baseline,e07_film_la,e02_concat_ce,recall_mel,-0.0281,-0.0816,+0.0257,0.313,no
+proposed vs baseline,e07_film_la,e02_concat_ce,recall_nv,+0.0066,-0.0048,+0.0181,0.281,no
