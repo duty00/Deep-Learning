@@ -1,0 +1,46 @@
+{
+  "experiment_name": "e12e_concat_la_frac25",
+  "task": "skin_lesion",
+  "seed": 42,
+  "dataset": {
+    "name": "ham10000",
+    "root": "data/raw/ham10000",
+    "split_manifest": "data/splits/manifest.json",
+    "group_key": "lesion_id",
+    "external_test": {
+      "name": "pad_ufes_20",
+      "root": "data/raw/pad_ufes_20"
+    }
+  },
+  "model": {
+    "name": "convnext_tiny",
+    "pretrained": "imagenet",
+    "checkpoint": null
+  },
+  "training": {
+    "batch_size": 32,
+    "micro_batch_size": 8,
+    "epochs": 30,
+    "learning_rate": 0.0001,
+    "head_learning_rate": 0.001,
+    "weight_decay": 0.05,
+    "scheduler": "cosine",
+    "warmup_epochs": 1,
+    "early_stopping_patience": 5,
+    "amp": true,
+    "selection_split": "validation"
+  },
+  "evaluation": {
+    "split": "test",
+    "primary_metric": "macro_f1"
+  },
+  "components": {
+    "meta_fusion": "concat",
+    "film_stages": [],
+    "loss": "logit_adjusted",
+    "tau": 1.0,
+    "domain_aug": false,
+    "train_fraction": 0.25
+  },
+  "output_dir": "outputs"
+}

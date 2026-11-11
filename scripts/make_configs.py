@@ -39,6 +39,14 @@ EXPERIMENTS = [
                                           "loss": "logit_adjusted", "tau": 1.0, "train_fraction": 0.25}, {}, {}, ""),
     ("e12d_film_la_frac50", "data size", {"meta_fusion": "film", "film_stages": [2, 3],
                                           "loss": "logit_adjusted", "tau": 1.0, "train_fraction": 0.5}, {}, {}, ""),
+    # Added after the first validation round: concat + LA (E5) beat FiLM + LA (E7), so E5 gets the
+    # backbone and data-size checks that were planned for E7.
+    ("e12e_concat_la_frac25", "data size", {"meta_fusion": "concat", "loss": "logit_adjusted", "tau": 1.0,
+                                            "train_fraction": 0.25}, {}, {}, "E5 at 25% train"),
+    ("e12f_concat_la_frac50", "data size", {"meta_fusion": "concat", "loss": "logit_adjusted", "tau": 1.0,
+                                            "train_fraction": 0.5}, {}, {}, "E5 at 50% train"),
+    ("e13_effb0_concat_la", "RQ4", {"meta_fusion": "concat", "loss": "logit_adjusted", "tau": 1.0},
+     {"name": "efficientnet_b0"}, {"micro_batch_size": 32}, "E5 on EfficientNet-B0"),
     # tau tuning on VALIDATION only (seed 42); pick tau before running E5/E7-E12 with 3 seeds.
     ("t07_film_la_tau05", "tune tau", {"meta_fusion": "film", "film_stages": [2, 3], "loss": "logit_adjusted",
                                        "tau": 0.5}, {}, {}, "validation only"),
@@ -52,6 +60,11 @@ DEFAULT_COMPONENTS = {"meta_fusion": "concat", "film_stages": [], "loss": "ce", 
 def main():
     out_dir = ROOT / "configs/experiments"
     out_dir.mkdir(exist_ok=True)
+    matrix_path = ROOT / "experiments/matrix.csv"
+    previous = {}
+    if matrix_path.exists():  # keep status/run_path already filled in by hand
+        with matrix_path.open(newline="", encoding="utf-8") as handle:
+            previous = {row["id"]: row for row in csv.DictReader(handle)}
     rows = []
     for exp_id, question, components, model, training, note in EXPERIMENTS:
         config = deepcopy(BASE)
@@ -62,9 +75,11 @@ def main():
         path = out_dir / f"{exp_id}.json"
         path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
         seeds = "42" if exp_id.startswith("t") else "42;43;44"
+        old = previous.get(exp_id, {})
         rows.append({"id": exp_id, "question": question, "config": path.relative_to(ROOT).as_posix(),
-                     "seed": seeds, "owner": "A", "status": "todo", "run_path": "", "notes": note})
-    with (ROOT / "experiments/matrix.csv").open("w", newline="", encoding="utf-8") as handle:
+                     "seed": seeds, "owner": "A", "status": old.get("status", "todo"),
+                     "run_path": old.get("run_path", ""), "notes": note})
+    with matrix_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)

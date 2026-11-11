@@ -1,11 +1,11 @@
 id,question,config,seed,owner,status,run_path,notes
-e01_image_only_ce,baseline,configs/experiments/e01_image_only_ce.json,42;43;44,A,todo,,image only
-e02_concat_ce,baseline (main),configs/experiments/e02_concat_ce.json,42;43;44,A,todo,,B1
-e03_concat_wce,RQ2,configs/experiments/e03_concat_wce.json,42;43;44,A,todo,,
-e04_concat_focal,RQ2,configs/experiments/e04_concat_focal.json,42;43;44,A,todo,,
-e05_concat_la,RQ2,configs/experiments/e05_concat_la.json,42;43;44,A,todo,,
-e06_film_ce,RQ1,configs/experiments/e06_film_ce.json,42;43;44,A,todo,,
-e07_film_la,proposed,configs/experiments/e07_film_la.json,42;43;44,A,todo,,main method
+e01_image_only_ce,baseline,configs/experiments/e01_image_only_ce.json,42;43;44,A,done (validation),outputs/e01_image_only_ce-s42..s44,image only
+e02_concat_ce,baseline (main),configs/experiments/e02_concat_ce.json,42;43;44,A,done (validation),outputs/e02_concat_ce-s42..s44,B1
+e03_concat_wce,RQ2,configs/experiments/e03_concat_wce.json,42;43;44,A,done (validation),outputs/e03_concat_wce-s42..s44,
+e04_concat_focal,RQ2,configs/experiments/e04_concat_focal.json,42;43;44,A,done (validation),outputs/e04_concat_focal-s42..s44,
+e05_concat_la,RQ2,configs/experiments/e05_concat_la.json,42;43;44,A,done (validation),outputs/e05_concat_la-s42..s44,
+e06_film_ce,RQ1,configs/experiments/e06_film_ce.json,42;43;44,A,done (validation),outputs/e06_film_ce-s42..s44,
+e07_film_la,proposed,configs/experiments/e07_film_la.json,42;43;44,A,done (validation),outputs/e07_film_la-s42..s44,main method
 e08_film_la_domainaug,RQ3,configs/experiments/e08_film_la_domainaug.json,42;43;44,A,todo,,
 e09_film3_la,ablation FiLM,configs/experiments/e09_film3_la.json,42;43;44,A,todo,,FiLM stage 3 only
 e10_effb0_concat_ce,RQ4,configs/experiments/e10_effb0_concat_ce.json,42;43;44,A,todo,,BatchNorm: run on Kaggle with micro 32
@@ -14,5 +14,8 @@ e12a_concat_ce_frac25,data size,configs/experiments/e12a_concat_ce_frac25.json,4
 e12b_concat_ce_frac50,data size,configs/experiments/e12b_concat_ce_frac50.json,42;43;44,A,todo,,
 e12c_film_la_frac25,data size,configs/experiments/e12c_film_la_frac25.json,42;43;44,A,todo,,
 e12d_film_la_frac50,data size,configs/experiments/e12d_film_la_frac50.json,42;43;44,A,todo,,
+e12e_concat_la_frac25,data size,configs/experiments/e12e_concat_la_frac25.json,42;43;44,A,todo,,E5 at 25% train
+e12f_concat_la_frac50,data size,configs/experiments/e12f_concat_la_frac50.json,42;43;44,A,todo,,E5 at 50% train
+e13_effb0_concat_la,RQ4,configs/experiments/e13_effb0_concat_la.json,42;43;44,A,todo,,E5 on EfficientNet-B0
 t07_film_la_tau05,tune tau,configs/experiments/t07_film_la_tau05.json,42,A,todo,,validation only
 t07_film_la_tau15,tune tau,configs/experiments/t07_film_la_tau15.json,42,A,todo,,validation only
