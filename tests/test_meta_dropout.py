@@ -1,9 +1,12 @@
 """Metadata dropout: whole metadata vector dropped per sample during training only."""
+import importlib.util
 import unittest
 
-import torch
+HAS_TIMM = importlib.util.find_spec("torch") is not None and importlib.util.find_spec("timm") is not None
+if HAS_TIMM:
+    import torch
 
-from dl_project.models.classifier import build_model
+    from dl_project.models.classifier import build_model
 
 
 def _config(meta_dropout, fusion="concat"):
@@ -11,6 +14,7 @@ def _config(meta_dropout, fusion="concat"):
             "components": {"meta_fusion": fusion, "film_stages": [], "meta_dropout": meta_dropout}}
 
 
+@unittest.skipUnless(HAS_TIMM, "needs torch + timm")
 class MetaDropoutTest(unittest.TestCase):
     def test_default_off_and_eval_deterministic(self):
         self.assertEqual(build_model(_config(0.0)).meta_dropout, 0.0)

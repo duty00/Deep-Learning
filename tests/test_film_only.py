@@ -1,11 +1,15 @@
 """FiLM-only fusion: metadata reaches the logits only through FiLM (no metadata in the head)."""
+import importlib.util
 import unittest
 
-import torch
+HAS_TIMM = importlib.util.find_spec("torch") is not None and importlib.util.find_spec("timm") is not None
+if HAS_TIMM:
+    import torch
 
-from dl_project.models.classifier import SkinLesionClassifier
+    from dl_project.models.classifier import SkinLesionClassifier
 
 
+@unittest.skipUnless(HAS_TIMM, "needs torch + timm")
 class FilmOnlyTest(unittest.TestCase):
     def setUp(self):
         torch.manual_seed(0)
