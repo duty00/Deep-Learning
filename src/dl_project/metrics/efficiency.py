@@ -1,4 +1,4 @@
-"""Parameter count, latency and peak memory (PLAN_BTL.md 5.9). Report GPU name, input size, batch size."""
+"""Parameter count, latency and peak memory. Report GPU name, input size, batch size."""
 import time
 
 

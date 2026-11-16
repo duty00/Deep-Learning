@@ -7,30 +7,21 @@ Usage: python scripts/aggregate_results.py [--split test]
 """
 import argparse
 import csv
-import json
 from pathlib import Path
-import re
 import statistics
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from dl_project.reporting import select_evaluation_runs  # noqa: E402
+
 METRICS = ("macro_f1", "balanced_accuracy", "rare_recall", "mel_auroc", "ece", "accuracy")
 CLASSES = ("akiec", "bcc", "bkl", "df", "mel", "nv", "vasc")
 
 
-def load_runs():
-    runs = []
-    for path in sorted(ROOT.glob("outputs/*/evaluate/*/metrics.json")):
-        run_dir = path.parent
-        config = json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
-        if config.get("debug"):
-            continue
-        metrics = json.loads(path.read_text(encoding="utf-8"))
-        meta = json.loads((run_dir / "metadata.json").read_text(encoding="utf-8"))
-        experiment = re.sub(r"-s\d+$", "", metrics["trained_experiment"])
-        runs.append({"experiment": experiment, "seed": metrics["trained_seed"], "split": metrics["split"],
-                     "metrics": metrics, "run_dir": run_dir.relative_to(ROOT).as_posix(),
-                     "commit": meta.get("git_commit")})
-    return runs
+def load_commit_map(root):
+    with (root / "experiments/COMMIT_MAP.csv").open(newline="", encoding="utf-8") as handle:
+        return {row["recorded_commit"]: row["current_commit"] for row in csv.DictReader(handle)}
 
 
 def fmt(values):
@@ -46,14 +37,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--split", default="test", choices=("validation", "test"))
     args = parser.parse_args()
-    runs = load_runs()
+    runs = select_evaluation_runs(ROOT)
+    commit_map = load_commit_map(ROOT)
     with (ROOT / "experiments/results.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["experiment_id", "git_commit", "seed", "split", "metric", "value", "run_path", "verified_by"])
+        writer.writerow(["experiment_id", "git_commit", "seed", "split", "metric", "value", "run_path",
+                         "verified_by", "git_commit_current"])
         for run in runs:
             for metric in METRICS:
                 writer.writerow([run["experiment"], run["commit"], run["seed"], run["split"], metric,
-                                 run["metrics"].get(metric), run["run_dir"], ""])
+                                 run["metrics"].get(metric), run["run_dir"], "",
+                                 commit_map.get(run["commit"], run["commit"])])
     selected = [run for run in runs if run["split"] == args.split]
     groups = {}
     for run in selected:
@@ -64,7 +58,7 @@ def main():
     rows = []
     for experiment in sorted(groups):
         group = groups[experiment]
-        row = {"experiment": experiment, "n_seeds": len(group)}
+        row = {"experiment": experiment, "n_seeds": len({r["seed"] for r in group})}
         for metric in METRICS:
             row[metric] = fmt([r["metrics"].get(metric) for r in group])[0]
         for c in CLASSES:

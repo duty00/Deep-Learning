@@ -1,4 +1,4 @@
-"""Metadata encoder and FiLM layer (PLAN_BTL.md section 5.6).
+"""Metadata encoder and FiLM layer.
 
 FiLM (Perez et al., AAAI 2018): F' = F * (1 + gamma(h)) + beta(h), with gamma/beta predicted per channel
 from the metadata embedding h. The projection is zero-initialised, so at initialisation FiLM is the

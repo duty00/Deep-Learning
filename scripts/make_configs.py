@@ -1,4 +1,4 @@
-"""Generate configs/experiments/e*.json for the experiment matrix (PLAN_BTL.md section 5.10).
+"""Generate configs/experiments/e*.json for the experiment matrix.
 
 All configs share configs/baseline.json except the fields listed below, so a comparison changes only
 the component under study. Seeds are passed at run time (--seed 42/43/44).
@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = json.loads((ROOT / "configs/baseline.json").read_text(encoding="utf-8"))
+PRETRAINED_TAGS = {"convnext_tiny": "in12k_ft_in1k", "efficientnet_b0": "ra_in1k"}
 
 # id, research question, components, model overrides, training overrides, note
 EXPERIMENTS = [
@@ -47,6 +48,11 @@ EXPERIMENTS = [
                                             "train_fraction": 0.5}, {}, {}, "E5 at 50% train"),
     ("e13_effb0_concat_la", "RQ4", {"meta_fusion": "concat", "loss": "logit_adjusted", "tau": 1.0},
      {"name": "efficientnet_b0"}, {"micro_batch_size": 32}, "E5 on EfficientNet-B0"),
+    # Added after lecturer feedback (13/11): FiLM as the only metadata path (no metadata in the head).
+    ("e14_filmonly_la", "RQ1 shortcut", {"meta_fusion": "film_only", "film_stages": [2, 3],
+                                         "loss": "logit_adjusted", "tau": 1.0}, {}, {}, "pilot FiLM-only"),
+    ("e15_concat_la_metadrop30", "RQ1 shortcut", {"meta_fusion": "concat", "loss": "logit_adjusted", "tau": 1.0,
+                                                  "meta_dropout": 0.3}, {}, {}, "E5 + metadata dropout p=0.3"),
     # tau tuning on VALIDATION only (seed 42); pick tau before running E5/E7-E12 with 3 seeds.
     ("t07_film_la_tau05", "tune tau", {"meta_fusion": "film", "film_stages": [2, 3], "loss": "logit_adjusted",
                                        "tau": 0.5}, {}, {}, "validation only"),
@@ -71,6 +77,7 @@ def main():
         config["experiment_name"] = exp_id
         config["components"] = {**DEFAULT_COMPONENTS, **components}
         config["model"].update(model)
+        config["model"]["pretrained_tag"] = PRETRAINED_TAGS[config["model"]["name"]]
         config["training"].update(training)
         path = out_dir / f"{exp_id}.json"
         path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")

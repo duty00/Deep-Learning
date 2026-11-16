@@ -1,94 +1,139 @@
-# DL — Phân loại tổn thương da HAM10000 (CO3133)
+# Skin Lesion Classification on HAM10000 with Patient Metadata
 
-Đề tài (đã chốt): **Metadata-Conditioned Feature Modulation and Prior-Aware Training for Long-Tailed Skin
-Lesion Classification under Domain Shift**. ConvNeXt-T + FiLM theo metadata (tuổi, giới, vị trí) + logit-adjusted
-loss trên HAM10000 (chia theo `lesion_id`), test domain shift trên PAD-UFES-20. Kế hoạch: [PLAN_BTL.md](PLAN_BTL.md).
-Chưa có kết quả thí nghiệm chính thức.
+Course project for **CO3133 – Deep Learning and Applications** (HK252, HCMUT).
+We study how patient metadata (age, sex, anatomical site) should be combined with dermoscopic images for
+7-class skin lesion classification on HAM10000, under a long-tailed label distribution and a strictly
+lesion-disjoint evaluation protocol.
 
-## Cài đặt (Windows, PowerShell)
+> **Status (16 Nov 2026):** all numbers below are on the **validation** split. The held-out test split has
+> **not** been evaluated yet; it will be scored once, after the final configuration is locked.
 
-```powershell
-cd D:\DL
-python -m venv .venv                      # Python 3.11 x64 chính thức (không dùng Python MSYS2)
-.\.venv\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
-.\.venv\Scripts\python.exe -m pip install -e ".[train]"
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
+## Highlights
 
-Cài torch CUDA **trước** `.[train]`; nếu làm ngược lại pip sẽ kéo bản torch CPU từ PyPI.
+- **Leakage-free protocol.** Train/validation/test = 70/15/15 split by `lesion_id` (7,011 / 1,502 / 1,502
+  images), committed as `data/splits/manifest.json` with the SHA-256 of the metadata file.
+- **Controlled comparisons.** Fusion (none / concat / FiLM / FiLM-only), loss (CE / weighted CE / focal /
+  logit-adjusted), metadata dropout, two backbones (ConvNeXt-T, EfficientNet-B0) and training-set size;
+  3 seeds each; lesion-level paired bootstrap for every comparison.
+- **Main finding so far.** Late fusion of metadata acts as a *prior shortcut*: it helps cases whose label is
+  typical for the patient's age/site but hurts metadata-atypical cases (e.g. melanoma in patients under 60).
+  Logit adjustment is the only change that significantly increases rare-class and melanoma recall.
 
-## Dữ liệu
+## Results (validation, mean over seeds 42/43/44)
 
-Tải theo [scripts/download_data.md](scripts/download_data.md) vào `data/raw/ham10000/`, rồi xác nhận phép chia đã commit:
+| ID | Backbone | Metadata | Loss | Macro-F1 | Bal. acc. | Rare recall | Mel recall |
+|---|---|---|---|---|---|---|---|
+| E1 | ConvNeXt-T | none | CE | 0.742 ± 0.009 | 0.746 | 0.720 | 0.586 |
+| E2 | ConvNeXt-T | concat | CE | 0.754 ± 0.036 | 0.752 | 0.720 | 0.641 |
+| E3 | ConvNeXt-T | concat | weighted CE | 0.763 ± 0.022 | 0.771 | 0.760 | 0.711 |
+| E4 | ConvNeXt-T | concat | focal | 0.777 ± 0.021 | 0.757 | 0.717 | 0.530 |
+| E5 | ConvNeXt-T | concat | logit-adjusted | 0.764 ± 0.017 | **0.801** | **0.800** | **0.737** |
+| E6 | ConvNeXt-T | FiLM + concat | CE | 0.744 ± 0.015 | 0.750 | 0.721 | 0.582 |
+| E7 | ConvNeXt-T | FiLM + concat | logit-adjusted | 0.737 ± 0.010 | 0.774 | 0.750 | 0.612 |
+| E9 | ConvNeXt-T | FiLM (stage 3) + concat | logit-adjusted | 0.752 ± 0.020 | 0.766 | 0.736 | 0.639 |
+| E14 | ConvNeXt-T | FiLM only | logit-adjusted | 0.753 ± 0.029 | 0.770 | 0.745 | 0.630 |
+| E15 | ConvNeXt-T | concat + metadata dropout 0.3 | logit-adjusted | 0.760 ± 0.016 | 0.769 | 0.742 | 0.653 |
+| E10 | EfficientNet-B0 | concat | CE | 0.740 ± 0.007 | 0.716 | 0.669 | 0.558 |
+| E11 | EfficientNet-B0 | FiLM + concat | logit-adjusted | 0.719 ± 0.021 | 0.760 | 0.743 | 0.673 |
+| E13 | EfficientNet-B0 | concat | logit-adjusted | 0.728 ± 0.003 | 0.775 | 0.764 | 0.675 |
 
-```powershell
-.\.venv\Scripts\python.exe scripts\make_splits.py --verify
-```
+Rare classes: `akiec, bcc, df, mel, vasc` (defined before training). Data-size ablations (E12a/b/e/f) and
+per-class tables are in `reports/tables/results_validation.csv`; per-run records are in
+`experiments/results.csv`.
 
-EDA: [notebooks/01_eda.ipynb](notebooks/01_eda.ipynb) (hình lưu ở `reports/figures/`).
-
-## Chạy thí nghiệm
-
-```powershell
-# Kiểm tra nhanh toàn bộ pipeline (2 epoch x 8 batch), kết quả không có ý nghĩa
-.\.venv\Scripts\python.exe -m dl_project train --config configs/experiments/e07_film_la.json --debug
-# Huấn luyện 1 seed (checkpoint chọn theo val macro-F1)
-.\.venv\Scripts\python.exe -m dl_project train --config configs/experiments/e07_film_la.json --seed 42
-# Đánh giá trên validation (test chỉ dùng cho cấu hình đã chốt)
-.\.venv\Scripts\python.exe -m dl_project evaluate --config configs/experiments/e07_film_la.json --seed 42 `
-    --checkpoint outputs/e07_film_la-s42/train/<run-id>/best.pt --split validation
-# Gom mean ± std qua seed -> reports/tables/, experiments/results.csv
-.\.venv\Scripts\python.exe scriptsggregate_results.py --split validation
-```
-
-- Ma trận thí nghiệm: [experiments/matrix.csv](experiments/matrix.csv); config sinh bằng `scripts/make_configs.py`.
-- Chạy hàng loạt trên Kaggle: [notebooks/kaggle_runner.ipynb](notebooks/kaggle_runner.ipynb) (`--micro-batch-size 32`).
-- Máy RTX 2050 4 GB: batch hiệu dụng 32 = micro-batch 8 × tích lũy 4, AMP. Xem [docs/HARDWARE.md](docs/HARDWARE.md).
-- Mỗi lượt chạy ghi vào `outputs/<experiment>/<train|evaluate>/<UTC-id>/`: config, commit, môi trường, `train.log`,
-  `history.csv`, `best.pt`, `metrics.json`, `predictions.csv`.
-
-## Đọc theo thứ tự
-
-1. [Tổng quan đề bài](docs/ASSIGNMENT.md).
-2. [Phân công 3 người](docs/TEAM.md) — thay A/B/C bằng tên thành viên.
-3. [Checklist và kế hoạch](docs/CHECKLIST.md).
-4. [Đề xuất đề tài](docs/PROPOSAL.md) — cùng điền trước khi huấn luyện dài.
-5. [Thiết kế kỹ thuật và cách thêm bài toán](docs/DEVELOPMENT.md).
-6. [Quy trình GitHub](docs/GITHUB.md).
-
-## Cấu trúc
+## Repository layout
 
 ```text
-configs/                 Cấu hình baseline và phương pháp đề xuất
+configs/
+  baseline.json            Shared defaults; every experiment config is generated from it
+  experiments/             One JSON per experiment (generated by scripts/make_configs.py)
+data/splits/manifest.json  Lesion-disjoint split (image ids only; no images in Git)
 src/dl_project/
-  data/                  Nạp dữ liệu, chia tập, tiền xử lý
-  models/                Baseline và cải tiến liên quan đến mô hình
-  tasks/                 Điểm kết nối bài toán với lệnh train/evaluate
-  engine/                Vòng lặp huấn luyện/đánh giá dùng chung
-  metrics/               Metric và tổng hợp kết quả
-scripts/                 Lệnh gọi train/evaluate
-tests/                   Kiểm tra cấu hình và nền tảng dùng chung
-data/{raw,interim,processed,splits}/  Dữ liệu cục bộ; không đưa lên Git
-checkpoints/             Trọng số cục bộ; không đưa lên Git
-outputs/                 Kết quả chạy cục bộ; không đưa lên Git
-experiments/             Nhật ký, ma trận và bảng kết quả đã kiểm tra
-notebooks/               Khám phá dữ liệu, phân tích lỗi
-reports/                 Hướng dẫn LNCS và hình/bảng được chọn cho báo cáo
-docs/                    Hướng dẫn, phân công, checklist, đề xuất
-.github/                 Mẫu issue/PR và kiểm tra tự động
+  data/                    HAM10000 dataset, metadata encoder, transforms, split logic
+  models/                  Staged timm backbones, metadata encoder, FiLM, classifier
+  engine/                  Trainer, losses (CE / weighted CE / focal / logit-adjusted), seeding
+  metrics/                 Classification metrics, lesion-level bootstrap CIs, ECE, efficiency
+  tasks/                   Train/evaluate entry points used by the CLI
+  cli.py, reporting.py     Command line interface and run selection for reports
+scripts/                   Split creation/verification, config generation, aggregation, analysis
+notebooks/                 EDA and the Kaggle batch runner
+experiments/               Experiment matrix and aggregated per-run results
+reports/                   Figures and tables used in the report
+tests/                     Unit tests (data, splits, models, training, reporting)
+docs/                      Assignment summary, proposal, team, hardware notes, attribution
 ```
 
-## Trạng thái hiện tại
+## Setup
 
-- Đã có: split theo lesion + manifest, Dataset/metadata encoder, model B0/B1/FiLM (ConvNeXt-T, EfficientNet-B0),
-  4 loss (CE, weighted CE, focal, logit-adjusted), trainer (AMP, tích lũy gradient, early stopping theo val),
-  metric (macro-F1, rare-recall, AUROC, ECE, bootstrap CI), 17 config thí nghiệm, notebook EDA và Kaggle, test tự động.
-- Cần làm: chạy E1–E12 × 3 seed, đánh giá PAD-UFES-20 (chưa tải), Grad-CAM, đo latency, phân tích lỗi.
-- Không có checkpoint hoặc số liệu giả trong repo.
+Python 3.10+ is required. Experiments were run on Kaggle (Python 3.13, CUDA 13.0, 2× Tesla T4); local
+development used Python 3.11 on Windows. Exact versions are pinned in `requirements-lock.txt`.
 
-## Nguyên tắc
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate    Linux/macOS: source .venv/bin/activate
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128   # pick your CUDA build
+pip install -e ".[train]"
+python -m unittest discover -s tests
+```
 
-Validation dùng để chọn cấu hình; test chỉ dùng đánh giá cuối. Lưu cấu hình, seed, môi trường,
-phần cứng và log. Mỗi thành phần đề xuất cần thí nghiệm đối chứng/ablation phù hợp.
-Không commit dữ liệu nhạy cảm, token, dữ liệu lớn hoặc checkpoint; cung cấp hướng dẫn truy cập đúng giấy phép.
-Ghi nguồn code tái sử dụng. Chưa chọn giấy phép phát hành cho code nhóm: ghi quyết định ở `docs/ATTRIBUTION.md`.
+Install the CUDA build of PyTorch **before** `.[train]`, otherwise pip installs the CPU build from PyPI.
+
+## Data
+
+1. Download HAM10000 (Tschandl et al., 2018; CC BY-NC 4.0). We use the Kaggle mirror
+   `kmader/skin-cancer-mnist-ham10000`; see `scripts/download_data.md` for other sources.
+2. Place it at `data/raw/ham10000/` (`HAM10000_metadata.csv`, `HAM10000_images_part_1/`, `HAM10000_images_part_2/`).
+3. Verify that your metadata file and the committed split match:
+
+```bash
+python scripts/make_splits.py --verify
+```
+
+## Reproducing the experiments
+
+Train and evaluate one configuration and seed:
+
+```bash
+python -m dl_project train    --config configs/experiments/e05_concat_la.json --seed 42
+python -m dl_project evaluate --config configs/experiments/e05_concat_la.json --seed 42 \
+       --checkpoint outputs/e05_concat_la-s42/train/<run-id>/best.pt --split validation
+```
+
+- `--debug` runs 2 epochs × 8 batches as a pipeline smoke test.
+- `--micro-batch-size N` changes VRAM use only (gradient accumulation keeps the effective batch at 32).
+- Every run writes `outputs/<experiment>-s<seed>/<train|evaluate>/<UTC-id>/` with the resolved config,
+  git commit, environment, `train.log`, `history.csv`, `best.pt`, `metrics.json` and `predictions.csv`.
+
+Batch runs: `notebooks/kaggle_runner.ipynb` clones this repository on Kaggle, runs two jobs in parallel on
+2× T4 and packs `outputs/` into a zip. All experiments are listed in `experiments/matrix.csv`.
+
+Aggregate and analyse:
+
+```bash
+python scripts/aggregate_results.py --split validation   # mean ± std tables -> reports/tables/, experiments/results.csv
+python scripts/analyze_results.py   --split validation   # paired bootstrap tables and figures
+python scripts/analyze_shortcut.py  --split validation   # metadata-typical vs atypical subgroup analysis
+```
+
+### Test-set protocol
+
+`evaluate` requires an explicit `--split`. Scoring the test split also requires `--final-test`; each test
+evaluation is appended to `experiments/test_log.csv`, and re-scoring the same checkpoint is refused unless
+`--allow-repeat-test` is given (and then must be reported).
+
+## Checkpoints
+
+Checkpoints are not stored in Git. Download links for the final models will be listed in
+`docs/CHECKPOINTS.md` before submission.
+
+## Attribution
+
+Backbones and pretrained weights come from [timm](https://github.com/huggingface/pytorch-image-models)
+(Apache-2.0): `convnext_tiny.in12k_ft_in1k` and `efficientnet_b0.ra_in1k`. The metadata encoder, FiLM layer,
+classifier, losses, training loop, split logic and analysis scripts are our own implementation; FiLM follows
+Perez et al. (AAAI 2018) and logit adjustment follows Menon et al. (ICLR 2021). Full list:
+`docs/ATTRIBUTION.md`.
+
+## Team
+
+CO3133 group of three students (names in `docs/TEAM.md`).

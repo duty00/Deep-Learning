@@ -1,4 +1,4 @@
-"""HAM10000 dataset, metadata encoding and image transforms (PLAN_BTL.md sections 5.3-5.5).
+"""HAM10000 dataset, metadata encoding and image transforms.
 
 Leakage rules implemented here:
 * Images are assigned to splits only through the committed manifest (``data/splits/manifest.json``).
@@ -18,7 +18,7 @@ from .splits import load_manifest, read_metadata
 
 CLASSES = ("akiec", "bcc", "bkl", "df", "mel", "nv", "vasc")
 CLASS_TO_INDEX = {name: index for index, name in enumerate(CLASSES)}
-# Defined before looking at any test result (PLAN_BTL.md 5.9): clinically important minority classes.
+# Defined before looking at any test result: clinically important minority classes.
 RARE_CLASSES = ("akiec", "bcc", "df", "mel", "vasc")
 
 SEXES = ("male", "female", "unknown")

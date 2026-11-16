@@ -14,7 +14,7 @@ SUPPORTED = ("convnext_tiny", "efficientnet_b0")
 class StagedBackbone(nn.Module):
     """stem -> stage1..stage4 -> finalize -> pooled feature vector (B, num_features)."""
 
-    def __init__(self, name, pretrained=False, drop_path_rate=0.1):
+    def __init__(self, name, pretrained=False, drop_path_rate=0.1, pretrained_tag=None):
         super().__init__()
         if name not in SUPPORTED:
             raise ValueError(f"Unsupported backbone {name!r}; choose from {SUPPORTED}.")
@@ -22,7 +22,17 @@ class StagedBackbone(nn.Module):
         if name.startswith("convnext"):
             kwargs["drop_path_rate"] = drop_path_rate
         self.name = name
-        self.model = timm.create_model(name, **kwargs)
+        model_name = name
+        if pretrained_tag is not None:
+            if not isinstance(pretrained_tag, str) or not pretrained_tag:
+                raise ValueError(f"Invalid pretrained_tag {pretrained_tag!r} for {name}.")
+            model_name = f"{name}.{pretrained_tag}"
+            try:
+                timm.models.get_pretrained_cfg(model_name, allow_unregistered=False)
+            except RuntimeError as exc:
+                raise ValueError(f"Invalid pretrained_tag {pretrained_tag!r} for {name}.") from exc
+        self.model = timm.create_model(model_name, **kwargs)
+        self.pretrained_tag = pretrained_tag if pretrained_tag is not None else self.model.pretrained_cfg.get("tag")
         self.num_features = self.model.num_features
         if name.startswith("convnext"):
             self.stem = self.model.stem

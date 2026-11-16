@@ -1,4 +1,4 @@
-"""Group-aware train/validation/test split for HAM10000 (PLAN_BTL.md section 5.4).
+"""Group-aware train/validation/test split for HAM10000.
 
 All images of one lesion (``lesion_id``) go to exactly one split, so near-identical
 views of the same lesion can never appear in both training and evaluation data.

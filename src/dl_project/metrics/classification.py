@@ -1,4 +1,4 @@
-"""Classification metrics (PLAN_BTL.md section 5.9). NumPy (+ scikit-learn for AUROC) only.
+"""Classification metrics. NumPy (+ scikit-learn for AUROC) only.
 
 Definitions (all computed on the same predictions for every method):
 * macro_f1 (PRIMARY): unweighted mean of per-class F1; every class counts equally, so the dominant
@@ -23,9 +23,9 @@ def confusion_matrix(y_true, y_pred, num_classes):
 
 
 def per_class_scores(matrix):
-    tp = np.diag(matrix).astype(float)
-    predicted = matrix.sum(axis=0).astype(float)
-    actual = matrix.sum(axis=1).astype(float)
+    tp = np.diagonal(matrix, axis1=-2, axis2=-1).astype(float)
+    predicted = matrix.sum(axis=-2).astype(float)
+    actual = matrix.sum(axis=-1).astype(float)
     with np.errstate(divide="ignore", invalid="ignore"):
         precision = np.where(predicted > 0, tp / predicted, 0.0)
         recall = np.where(actual > 0, tp / actual, 0.0)
@@ -86,17 +86,53 @@ def _binary_auroc(is_positive, score):
 
 
 def bootstrap_ci(y_true, probs, metric="macro_f1", class_names=None, n_boot=1000, seed=0, alpha=0.05,
-                 rare_classes=()):
-    """Percentile bootstrap CI of a scalar metric over test images (resampling with replacement)."""
+                 rare_classes=(), groups=None):
+    """Percentile CI with replacement over images, or over whole groups when provided."""
     y_true = np.asarray(y_true, dtype=int)
     probs = np.asarray(probs, dtype=float)
     class_names = list(class_names or range(probs.shape[1]))
+    if groups is not None and metric in ("macro_f1", "balanced_accuracy", "rare_recall"):
+        return grouped_score_intervals(y_true, probs.argmax(axis=1), class_names, rare_classes,
+                                       groups, n_boot, seed, alpha)[f"{metric}_ci95"]
     rng = np.random.default_rng(seed)
     values = []
-    for _ in range(n_boot):
-        idx = rng.integers(0, len(y_true), len(y_true))
+    if groups is None:
+        samples = (rng.integers(0, len(y_true), len(y_true)) for _ in range(n_boot))
+    else:
+        inverse, counts = _group_draws(groups, len(y_true), n_boot, rng)
+        samples = (np.repeat(np.arange(len(y_true)), row[inverse]) for row in counts)
+    for idx in samples:
         value = classification_report(y_true[idx], probs[idx], class_names, rare_classes,
                                       positive_class=None)[metric]
         values.append(value)
+    return _percentile_interval(values, alpha)
+
+
+def _percentile_interval(values, alpha):
     low, high = np.quantile(values, [alpha / 2, 1 - alpha / 2])
     return float(low), float(high)
+
+
+def _group_draws(groups, n_images, n_boot, rng):
+    groups = np.asarray(groups)
+    if groups.shape != (n_images,) or not n_images or n_boot <= 0:
+        raise ValueError("Expected one group per image, nonempty predictions and a positive resample count.")
+    labels, inverse = np.unique(groups, return_inverse=True)
+    n_groups = len(labels)
+    counts = rng.multinomial(n_groups, np.full(n_groups, 1 / n_groups), size=n_boot)
+    return inverse, counts
+
+
+def grouped_score_intervals(y_true, y_pred, class_names, rare_classes, groups, n_boot=1000, seed=0, alpha=0.05):
+    """Bootstrap confusion-based scores together so each draw reuses the same lesion counts."""
+    y_true, y_pred = np.asarray(y_true, dtype=int), np.asarray(y_pred, dtype=int)
+    k = len(class_names)
+    inverse, counts = _group_draws(groups, len(y_true), n_boot, np.random.default_rng(seed))
+    confusion_by_group = np.zeros((counts.shape[1], k * k))
+    np.add.at(confusion_by_group, (inverse, y_true * k + y_pred), 1)
+    confusion = (counts @ confusion_by_group).reshape(n_boot, k, k)
+    _, recall, f1, _ = per_class_scores(confusion)
+    rare_idx = [class_names.index(name) for name in rare_classes]
+    return {"macro_f1_ci95": _percentile_interval(f1.mean(axis=-1), alpha),
+            "balanced_accuracy_ci95": _percentile_interval(recall.mean(axis=-1), alpha),
+            "rare_recall_ci95": _percentile_interval(recall[:, rare_idx].mean(axis=-1), alpha) if rare_idx else None}

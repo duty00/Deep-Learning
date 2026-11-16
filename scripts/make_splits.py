@@ -1,4 +1,4 @@
-"""Create or verify the HAM10000 lesion-grouped split manifest (PLAN_BTL.md section 5.4).
+"""Create or verify the HAM10000 lesion-grouped split manifest.
 
 Run from the repository root after ``pip install -e ".[data]"``:
 

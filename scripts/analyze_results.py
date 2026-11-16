@@ -22,6 +22,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from dl_project.metrics.classification import expected_calibration_error  # noqa: E402
+from dl_project.reporting import select_evaluation_runs  # noqa: E402
 CLASSES = ["akiec", "bcc", "bkl", "df", "mel", "nv", "vasc"]
 RARE = [CLASSES.index(c) for c in ("akiec", "bcc", "df", "mel", "vasc")]
 K = len(CLASSES)
@@ -50,23 +51,14 @@ TEXT, TEXT2, GRID = "#0b0b0b", "#52514e", "#e4e3df"
 def load_runs(split):
     """{experiment: [(seed, image_ids, y_true, probs)]}, latest evaluate run per seed, debug excluded."""
     runs = defaultdict(list)
-    for exp_dir in sorted((ROOT / "outputs").glob("*-s*")):
-        if exp_dir.name.endswith("-debug"):
-            continue
-        exp, seed = exp_dir.name.rsplit("-s", 1)
-        candidates = []
-        for pred in sorted(exp_dir.glob("evaluate/*/predictions.csv")):
-            meta = (pred.parent / "metrics.json")
-            if meta.exists() and f'"split": "{split}"' in meta.read_text(encoding="utf-8"):
-                candidates.append(pred)
-        if not candidates:
-            continue
-        with candidates[-1].open(newline="", encoding="utf-8") as handle:
+    for run in select_evaluation_runs(ROOT, split):
+        predictions = ROOT / run["run_dir"] / "predictions.csv"
+        with predictions.open(newline="", encoding="utf-8") as handle:
             rows = list(csv.DictReader(handle))
         ids = [r["image_id"] for r in rows]
         y = np.array([CLASSES.index(r["y_true"]) for r in rows])
         p = np.array([[float(r[f"p_{c}"]) for c in CLASSES] for r in rows])
-        runs[exp].append((int(seed), ids, y, p))
+        runs[run["experiment"]].append((run["seed"], ids, y, p))
     return runs
 
 

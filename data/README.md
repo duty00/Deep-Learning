@@ -1,11 +1,15 @@
-# Dữ liệu — B phụ trách
+# Data
 
-- `raw/`: bản gốc, không sửa trực tiếp.
-- `interim/`: dữ liệu trung gian.
-- `processed/`: dữ liệu đã xử lý.
-- `splits/`: manifest chia train/validation/test, seed và nhóm chia.
+Images and metadata are not stored in Git (HAM10000 is CC BY-NC 4.0). Download instructions:
+`scripts/download_data.md`. Expected layout:
 
-Các thư mục trên được loại khỏi Git. Không mặc định đẩy dữ liệu lên GitHub.
-Ghi nguồn, phiên bản, điều kiện sử dụng, cách tải và checksum/định danh dữ liệu ở đây khi chốt đề tài.
-Nếu cần chia sẻ manifest nhỏ, đã kiểm tra giấy phép/quyền riêng tư, đặt bản thích hợp trong `experiments/`.
-Không chia các phiên bản cùng mẫu hoặc cùng nhóm liên quan sang nhiều tập.
+```text
+data/raw/ham10000/
+  HAM10000_metadata.csv
+  HAM10000_images_part_1/
+  HAM10000_images_part_2/
+```
+
+`splits/manifest.json` is committed: it maps every `image_id` to train/validation/test (70/15/15, grouped by
+`lesion_id`) and stores the SHA-256 of the metadata file it was built from. Check it with
+`python scripts/make_splits.py --verify`.

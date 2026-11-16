@@ -55,6 +55,28 @@ class MetricTests(unittest.TestCase):
         self.assertLessEqual(low, point)
         self.assertGreaterEqual(high, point)
 
+    def test_group_bootstrap_keeps_repeated_images_together(self):
+        # Each lesion has 15 identical predictions, with correctness varying only between lesions.
+        labels = np.repeat([0, 0, 0, 0, 1, 1, 1, 1], 15)
+        preds = np.repeat([0, 0, 1, 1, 1, 1, 0, 0], 15)
+        groups = np.repeat(np.arange(8), 15)
+        probs = one_hot_probs(preds, k=2)
+        names = ["a", "b"]
+        image = bootstrap_ci(labels, probs, "macro_f1", names, n_boot=400)
+        lesion = bootstrap_ci(labels, probs, "macro_f1", names, n_boot=400, groups=groups)
+        self.assertGreaterEqual(lesion[1] - lesion[0], image[1] - image[0])
+
+    def test_bootstrap_without_groups_matches_legacy_draws(self):
+        labels = np.array([0, 0, 1, 1, 2, 2, 2])
+        probs = one_hot_probs([0, 2, 1, 2, 1, 2, 2])
+        rng = np.random.default_rng(13)
+        legacy = []
+        for _ in range(100):
+            idx = rng.integers(0, len(labels), len(labels))
+            legacy.append(classification_report(labels[idx], probs[idx], NAMES, positive_class=None)["macro_f1"])
+        expected = tuple(np.quantile(legacy, [0.025, 0.975]))
+        self.assertEqual(bootstrap_ci(labels, probs, class_names=NAMES, n_boot=100, seed=13, groups=None), expected)
+
 
 @unittest.skipUnless(HAS_TORCH, "needs torch")
 class LossTests(unittest.TestCase):
@@ -93,6 +115,31 @@ class LossTests(unittest.TestCase):
 
 @unittest.skipUnless(HAS_TORCH, "needs torch")
 class TrainerTests(unittest.TestCase):
+    def test_trainer_skips_singleton_micro_batch_with_batchnorm(self):
+        import tempfile
+        import torch
+        from torch import nn
+        from torch.utils.data import DataLoader
+        from dl_project.engine.trainer import Trainer
+
+        class Net(nn.Sequential):
+            def forward(self, image, meta_num, meta_loc):
+                return super().forward(image)
+
+        model = Net(nn.BatchNorm1d(3), nn.Linear(3, 3))
+        data = [{"image": torch.randn(3), "label": torch.tensor(i % 3), "meta_num": torch.zeros(5),
+                 "meta_loc": torch.tensor(0), "image_id": str(i)} for i in range(33)]
+        loader = DataLoader(data, batch_size=32)
+        messages = []
+        with tempfile.TemporaryDirectory() as temp:
+            trainer = Trainer(model, nn.CrossEntropyLoss(), torch.optim.SGD(model.parameters(), lr=0.01),
+                              torch.device("cpu"), temp, NAMES, ["c"], batch_size=32, micro_batch_size=32,
+                              epochs=2, log=messages.append)
+            summary = trainer.fit(loader, loader)
+        self.assertEqual(summary["steps_per_epoch"], 1)
+        self.assertEqual(model[0].num_batches_tracked.item(), 2)
+        self.assertEqual(sum("Skipping a one-image" in message for message in messages), 1)
+
     def test_trainer_learns_tiny_problem_with_accumulation(self):
         import tempfile
         from pathlib import Path

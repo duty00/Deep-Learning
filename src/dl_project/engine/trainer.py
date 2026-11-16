@@ -1,4 +1,4 @@
-"""Training / evaluation loops (PLAN_BTL.md 5.8, docs/HARDWARE.md batch convention).
+"""Training / evaluation loops (docs/HARDWARE.md batch convention).
 
 * ``batch_size`` is the EFFECTIVE batch; the DataLoader yields ``micro_batch_size`` images and gradients are
   accumulated over ``accum = batch_size // micro_batch_size`` micro-batches before one optimizer step.
@@ -73,6 +73,11 @@ class Trainer:
 
     def _steps_per_epoch(self, loader):
         micro = len(loader) if self.max_train_batches is None else min(len(loader), self.max_train_batches)
+        size = getattr(loader, "batch_size", None)
+        if size == 1:
+            raise ValueError("Training requires a micro-batch size of at least 2.")
+        if size and micro == len(loader) and not loader.drop_last and len(loader.sampler) % size == 1:
+            micro -= 1
         steps = micro // self.accum
         if steps == 0:
             raise ValueError(f"Not enough micro-batches ({micro}) for one optimizer step (accum={self.accum}).")
@@ -87,6 +92,7 @@ class Trainer:
         scheduler = cosine_with_warmup(self.optimizer, self.warmup_epochs * steps_per_epoch,
                                        self.epochs * steps_per_epoch)
         history, best, best_epoch, bad_epochs = [], -1.0, None, 0
+        warned_singleton = False
         if self.device.type == "cuda":
             torch.cuda.reset_peak_memory_stats()
         start = time.time()
@@ -95,8 +101,16 @@ class Trainer:
             epoch_start, running, seen = time.time(), 0.0, 0
             self.optimizer.zero_grad(set_to_none=True)
             micro_limit = steps_per_epoch * self.accum
+            processed = 0
             for index, batch in enumerate(train_loader):
-                if index >= micro_limit:
+                if self.max_train_batches is not None and index >= self.max_train_batches:
+                    break
+                if self.model.training and len(batch["label"]) == 1:
+                    if not warned_singleton:
+                        self.log("Skipping a one-image training micro-batch because BatchNorm requires at least two.")
+                        warned_singleton = True
+                    continue
+                if processed >= micro_limit:
                     break
                 with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.amp):
                     logits = _forward(self.model, batch, self.device)
@@ -106,7 +120,8 @@ class Trainer:
                 self.scaler.scale(loss / self.accum).backward()
                 running += loss.item() * len(batch["label"])
                 seen += len(batch["label"])
-                if (index + 1) % self.accum == 0:
+                processed += 1
+                if processed % self.accum == 0:
                     if self.grad_clip:
                         self.scaler.unscale_(self.optimizer)
                         torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
@@ -114,6 +129,8 @@ class Trainer:
                     self.scaler.update()
                     self.optimizer.zero_grad(set_to_none=True)
                     scheduler.step()
+            if processed < self.accum:
+                raise ValueError("No complete accumulation group of non-singleton training micro-batches.")
             _, y_val, p_val = predict(self.model, val_loader, self.device, self.amp, self.max_eval_batches)
             val = classification_report(y_val, p_val, self.class_names, self.rare_classes)
             val_loss = float(F.nll_loss(torch.log(torch.from_numpy(p_val).clamp_min(1e-12)),

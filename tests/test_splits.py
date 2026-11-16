@@ -1,4 +1,4 @@
-"""Tests for the lesion-grouped HAM10000 split (PLAN_BTL.md sections 0.5 and 5.4).
+"""Tests for the lesion-grouped HAM10000 split.
 
 Synthetic metadata mimics HAM10000: 7 imbalanced classes, 1-4 images per lesion.
 Tests needing scikit-learn are skipped when it is not installed (pip install -e ".[data]").

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dl-group-project"
 version = "0.1.0"
-description = "Research project scaffold for a three-person deep learning team"
+description = "HAM10000 skin lesion classification with metadata fusion and class-prior adjustment"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
@@ -13,7 +13,7 @@ dependencies = []
 [project.optional-dependencies]
 # data: enough to build/verify the lesion-grouped split (scripts/make_splits.py, tests/test_splits.py).
 data = ["numpy", "scikit-learn>=1.3"]
-# train: versions to be pinned in requirements-lock.txt once the environment is fixed (PLAN_BTL 5.11).
+# See requirements-lock.txt for the recorded experiment versions (PLAN_BTL 5.11).
 train = ["torch", "numpy", "pandas", "scikit-learn>=1.3", "matplotlib", "tqdm", "timm", "pillow", "grad-cam"]
 
 [project.scripts]

@@ -1,4 +1,4 @@
-"""Tests for HAM10000 metadata encoding, train-only fitting and the Dataset (PLAN_BTL.md 5.3-5.5)."""
+"""Tests for HAM10000 metadata encoding, train-only fitting and the Dataset."""
 import importlib.util
 from pathlib import Path
 from tempfile import TemporaryDirectory

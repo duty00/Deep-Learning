@@ -15,6 +15,7 @@
   "model": {
     "name": "convnext_tiny",
     "pretrained": "imagenet",
+    "pretrained_tag": "in12k_ft_in1k",
     "checkpoint": null
   },
   "training": {
@@ -31,7 +32,7 @@
     "selection_split": "validation"
   },
   "evaluation": {
-    "split": "test",
+    "split": "validation",
     "primary_metric": "macro_f1"
   },
   "components": {

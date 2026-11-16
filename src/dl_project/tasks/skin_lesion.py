@@ -1,4 +1,4 @@
-"""SkinLesionTask: HAM10000 7-class classification (PLAN_BTL.md section 5).
+"""SkinLesionTask: HAM10000 7-class classification.
 
 train:    fits on train, selects the checkpoint on validation (never test), writes run artefacts.
 evaluate: loads ``model.checkpoint`` and scores ``evaluation.split`` (validation while developing; test
@@ -93,7 +93,8 @@ class SkinLesionTask(Task):
         val_loader = _loader(datasets["validation"], max(micro, 32), False, workers, seed)
 
         model = build_model(config, MetadataEncoder.NUM_NUMERIC, MetadataEncoder.NUM_LOCALIZATIONS).to(device)
-        log(f"model: {config['model']['name']} fusion={model.meta_fusion} film_stages={model.film_stages} "
+        log(f"model: {config['model']['name']} pretrained_tag={model.backbone.pretrained_tag} "
+            f"fusion={model.meta_fusion} film_stages={model.film_stages} "
             f"params={count_parameters(model):,}")
         loss_fn = build_loss(components.get("loss", "ce"), counts, tau=components.get("tau")).to(device)
         optimizer = torch.optim.AdamW(model.parameter_groups(train_cfg["learning_rate"],
@@ -110,7 +111,8 @@ class SkinLesionTask(Task):
             log=log)
         summary = trainer.fit(train_loader, val_loader)
         summary.update(hardware=_hardware(device), debug=debug, micro_batch_size=micro,
-                       train_class_counts=dict(zip(CLASSES, counts)), parameters=count_parameters(model))
+                       train_class_counts=dict(zip(CLASSES, counts)), parameters=count_parameters(model),
+                       pretrained_tag=model.backbone.pretrained_tag)
         (Path(run_dir) / "train_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
         log(f"done: best val macro-F1 {summary['best_val_macro_f1']:.4f} at epoch {summary['best_epoch']} "
             f"| peak GPU memory {summary['peak_gpu_memory_mb']} MB | checkpoint {Path(run_dir) / 'best.pt'}")
@@ -120,7 +122,7 @@ class SkinLesionTask(Task):
         from ..data.ham10000 import (CLASSES, RARE_CLASSES, HAM10000Dataset, MetadataEncoder, build_transforms,
                                      index_images, load_split_records)
         from ..engine.trainer import predict
-        from ..metrics.classification import bootstrap_ci, classification_report
+        from ..metrics.classification import classification_report, grouped_score_intervals
         from ..models.classifier import build_model
 
         log = _logger(run_dir)
@@ -143,7 +145,10 @@ class SkinLesionTask(Task):
         ids, y_true, probs = predict(model, loader, device,
                                      max_batches=DEBUG_LIMITS["max_eval_batches"] if config.get("debug") else None)
         report = classification_report(y_true, probs, list(CLASSES), RARE_CLASSES)
-        report["macro_f1_ci95"] = bootstrap_ci(y_true, probs, "macro_f1", list(CLASSES), rare_classes=RARE_CLASSES)
+        lesion_by_image = {record["image_id"]: record["lesion_id"] for record in records}
+        report.update(grouped_score_intervals(y_true, probs.argmax(axis=1), list(CLASSES), RARE_CLASSES,
+                                              [lesion_by_image[image_id] for image_id in ids]))
+        report["ci_resampling"] = "lesion"
         report.update(split=split, checkpoint=str(config["model"]["checkpoint"]),
                       checkpoint_epoch=checkpoint.get("epoch"), trained_experiment=trained_config["experiment_name"],
                       trained_seed=trained_config["seed"], hardware=_hardware(device))

@@ -1,4 +1,4 @@
-"""Losses compared in RQ2 (PLAN_BTL.md section 5.7). All class statistics come from TRAIN counts.
+"""Losses compared in RQ2. All class statistics come from TRAIN counts.
 
 * ``ce``             plain cross-entropy.
 * ``weighted_ce``    CE with inverse-frequency class weights, normalised to mean 1.

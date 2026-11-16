@@ -1,4 +1,4 @@
-"""Model tests: output shapes, FiLM identity at initialisation, parameter groups (PLAN_BTL.md 5.6)."""
+"""Model tests: output shapes, FiLM identity at initialisation, parameter groups."""
 import importlib.util
 import unittest
 
@@ -93,11 +93,24 @@ class ModelTests(unittest.TestCase):
         from pathlib import Path
         from dl_project.models.classifier import build_model
 
-        config = json.loads((Path(__file__).resolve().parents[1] / "configs/proposed.json").read_text("utf-8"))
+        config = json.loads((Path(__file__).resolve().parents[1] / "configs/experiments/e07_film_la.json").read_text("utf-8"))
         config["model"]["pretrained"] = None  # no download in tests
         model = build_model(config)
         self.assertEqual(model.meta_fusion, config["components"]["meta_fusion"])
         self.assertEqual(model.film_stages, tuple(config["components"]["film_stages"]))
+
+    def test_explicit_pretrained_tag_without_download(self):
+        from dl_project.models.classifier import build_model
+
+        for name, tag in (("convnext_tiny", "in12k_ft_in1k"), ("efficientnet_b0", "ra_in1k")):
+            with self.subTest(name=name):
+                config = {"model": {"name": name, "pretrained": False, "pretrained_tag": tag}}
+                model = build_model(config)
+                self.assertEqual(model.backbone.pretrained_tag, tag)
+                self.assertEqual(model.backbone.model.pretrained_cfg["tag"], tag)
+                config["model"]["pretrained_tag"] = "invalid_tag"
+                with self.assertRaisesRegex(ValueError, "Invalid pretrained_tag.*invalid_tag"):
+                    build_model(config)
 
 
 if __name__ == "__main__":
